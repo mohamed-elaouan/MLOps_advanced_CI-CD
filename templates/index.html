@@ -3,28 +3,113 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Australia Weather Rain Prediction</title>
+        <title>Australia Rain Prediction | MLOps App</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     </head>
     <body>
-        <div class="container">
-            <h1>Australia Weather Rain Prediction</h1>
-            <form method="post">
-                {% for feature in features %}
-                    <div class="form-group">
-                        <label for="{{ feature }}">{{ feature }}:</label>
-                        <input type="text" name="{{ feature }}" required>
-                    </div>
-                {% endfor %}
-                <button type="submit">Predict</button>
-            </form>
-
-            {% if prediction is not none %}
-                <div class="prediction-box">
-                    <h2>Prediction: {{ prediction }}</h2>
+        <main class="app-shell">
+            <section class="hero-panel" aria-labelledby="page-title">
+                <div class="hero-copy">
+                    <p class="eyebrow">MLOps Weather Intelligence</p>
+                    <h1 id="page-title">Australia Rain Prediction</h1>
+                    <p class="hero-text">
+                        Estimate whether it will rain tomorrow from daily weather observations using a trained XGBoost model served through Flask.
+                    </p>
                 </div>
-            {% endif %}
-        </div>
+
+                <div class="model-card" aria-label="Model summary">
+                    <span class="model-card__label">Prediction Target</span>
+                    <strong>Rain Tomorrow</strong>
+                    <p>Binary classification output: YES or NO.</p>
+                </div>
+            </section>
+
+            <section class="workspace" aria-label="Rain prediction form">
+                <aside class="info-panel">
+                    <div>
+                        <p class="section-kicker">Input Format</p>
+                        <h2>Enter encoded numeric weather features</h2>
+                        <p>
+                            This interface keeps the same numeric feature contract used during training. Categorical values such as location and wind direction should be entered as their encoded model values.
+                        </p>
+                    </div>
+
+                    <div class="metric-list" aria-label="Application highlights">
+                        <div class="metric-item">
+                            <span>24</span>
+                            <p>Model features</p>
+                        </div>
+                        <div class="metric-item">
+                            <span>XGBoost</span>
+                            <p>Classifier</p>
+                        </div>
+                        <div class="metric-item">
+                            <span>Flask</span>
+                            <p>Serving layer</p>
+                        </div>
+                    </div>
+
+                    {% if prediction is not none %}
+                        <div class="prediction-box prediction-box--{{ prediction | lower }}" role="status" aria-live="polite">
+                            <span class="prediction-label">Prediction</span>
+                            <strong>{{ prediction }}</strong>
+                            <p>
+                                {% if prediction == 'YES' %}
+                                    The model expects rain tomorrow based on the submitted conditions.
+                                {% elif prediction == 'NO' %}
+                                    The model does not expect rain tomorrow based on the submitted conditions.
+                                {% else %}
+                                    The model returned an unknown class.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    {% if error %}
+                        <div class="error-box" role="alert">
+                            <strong>Input check failed</strong>
+                            <p>{{ error }}</p>
+                        </div>
+                    {% endif %}
+                </aside>
+
+                <form class="prediction-form" method="post" novalidate>
+                    {% for group in feature_groups %}
+                        <fieldset class="form-section">
+                            <legend>
+                                <span>{{ group.title }}</span>
+                                <small>{{ group.description }}</small>
+                            </legend>
+
+                            <div class="form-grid">
+                                {% for field in group.fields %}
+                                    <div class="form-group">
+                                        <label for="{{ field.name }}">{{ field.label }}</label>
+                                        <input
+                                            id="{{ field.name }}"
+                                            type="number"
+                                            step="any"
+                                            name="{{ field.name }}"
+                                            placeholder="{{ field.placeholder }}"
+                                            value="{{ form_values.get(field.name, '') }}"
+                                            required
+                                        >
+                                        <small>{{ field.helper }}</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    {% endfor %}
+
+                    <div class="form-actions">
+                        <p>All fields are required because the deployed model expects a complete feature vector.</p>
+                        <button type="submit">Predict Rain Tomorrow</button>
+                    </div>
+                </form>
+            </section>
+        </main>
     </body>
 </html>
