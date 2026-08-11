@@ -1,261 +1,198 @@
-# Australia Rain Prediction MLOps Application
+# Australia Rain Prediction — MLOps Project
 
-A deployable MLOps web application that predicts whether it will rain tomorrow in Australia from weather observations. The project combines a trained XGBoost classifier, a Flask prediction interface, Docker packaging, and CI/CD deployment configuration for Google Cloud Platform.
+An end-to-end machine learning application that predicts whether it will rain tomorrow in Australia from daily weather observations. It demonstrates the path from raw data and feature preparation to a trained model, an interactive Flask web application, containerisation, Kubernetes deployment, and CI/CD configuration.
 
-## Project Value
+**Built as a portfolio project by Mohamed EL Aouan.**
 
-This project demonstrates how a machine learning model can move from training artifacts into a production-style web service. It is designed as a portfolio project for recruiters, hiring managers, and technical reviewers who want to see practical MLOps skills: data processing, model training, model serialization, application serving, containerization, and cloud deployment.
+## Executive summary
 
-Weather prediction is a practical decision-support use case for logistics, agriculture, transport, event planning, and public services. The app converts daily weather measurements into a simple binary prediction: whether rain is expected tomorrow.
+Weather forecasts support operational planning in sectors such as agriculture, transport, logistics, events, and public services. This project turns current-day weather measurements into a simple decision-support signal: **is rain expected tomorrow — Yes or No?**
 
-## What the Application Does
+The repository is deliberately structured as a production-style MLOps project rather than a notebook-only model. It separates preprocessing, training, application serving, packaging, and deployment configuration so that each part can be reviewed, run, and evolved independently.
 
-The Flask application serves a responsive web UI where users submit the numeric feature vector expected by the trained model. The app loads the serialized model artifact from `artifacts/models/model.pkl`, runs inference, and returns one of two outcomes:
-
-- `YES`: rain is predicted tomorrow.
-- `NO`: rain is not predicted tomorrow.
-
-The current model contract uses numeric values, including encoded categorical features such as location, wind direction, and rain-today status.
-
-## Architecture
-
-```text
-Raw Weather Data
-      |
-      v
-Data Processing
-- date feature extraction
-- missing value handling
-- label encoding
-- train/test split
-      |
-      v
-Model Training
-- XGBoost classifier
-- evaluation metrics
-- model serialization with joblib
-      |
-      v
-Flask Web Application
-- loads trained model
-- accepts weather features
-- returns rain prediction
-      |
-      v
-GCP Deployment Path
-- Docker image
-- Artifact Registry
-- Google Kubernetes Engine
-- LoadBalancer service
-```
-
-## MLOps Workflow
-
-The repository is organized around a complete machine learning delivery flow:
-
-1. Load weather data from `artifacts/raw/data.csv`.
-2. Transform the `Date` field into `Year`, `Month`, and `Day`.
-3. Fill missing numerical values with column means.
-4. Encode categorical variables for model training.
-5. Split the dataset into training and test sets.
-6. Train an `XGBClassifier` model.
-7. Evaluate accuracy, precision, recall, and F1 score.
-8. Save the trained model with `joblib`.
-9. Serve predictions through a Flask web application.
-10. Package and deploy the app with Docker and Kubernetes on GCP.
-
-## Google Cloud Platform Deployment
-
-This project is prepared for deployment to Google Cloud Platform using:
-
-- **Artifact Registry** for storing Docker images.
-- **Google Kubernetes Engine (GKE)** for running the Flask prediction service.
-- **Kubernetes Deployment** with 2 replicas for the application workload.
-- **Kubernetes LoadBalancer Service** to expose the app publicly.
-- **CI/CD pipelines** for automated build, push, and deploy steps.
-
-The deployment manifest is defined in `kubernetes-deployment.yaml`. It creates:
-
-- `Deployment`: `mlops-app`
-- `Service`: `mlops-service`
-- Container port: `5000`
-- Public service port: `80`
-- Service type: `LoadBalancer`
-
-### CI/CD Options
-
-The repository includes multiple CI/CD configurations for GCP deployment:
-
-- `.github/workflows/deploy.yml`: GitHub Actions workflow for building the image, pushing it to Artifact Registry, and deploying to GKE.
-- `.gitlab-ci.yml`: GitLab CI pipeline with checkout, Docker build/push, and GKE deployment stages.
-- `.circleci/config.yml`: CircleCI workflow for Docker image build/push and Kubernetes deployment.
-
-Typical pipeline flow:
-
-```text
-Push to repository
-      |
-      v
-Authenticate to GCP
-      |
-      v
-Build Docker image
-      |
-      v
-Push image to Artifact Registry
-      |
-      v
-Get GKE cluster credentials
-      |
-      v
-Apply Kubernetes manifest
-      |
-      v
-Expose Flask app through LoadBalancer
-```
-
-### Required GCP Configuration
-
-Before deploying, the cloud environment should include:
-
-- A GCP project.
-- Artifact Registry repository in the target region.
-- A GKE cluster.
-- A service account with permissions for Artifact Registry, GKE, and Kubernetes deployment.
-- CI/CD secrets for authentication, such as `GCP_SA_KEY`, `GCP_PROJECT_ID`, `GOOGLE_PROJECT_ID`, `GKE_CLUSTER`, and `GOOGLE_COMPUTE_REGION`, depending on the selected CI provider.
-
-## Tech Stack
-
-| Area | Tools |
+| Capability | Implementation |
 | --- | --- |
-| Backend | Python, Flask |
-| Machine Learning | pandas, NumPy, scikit-learn, XGBoost |
-| Model Persistence | joblib |
-| UI | HTML, CSS, Jinja templates |
-| Packaging | Docker, setuptools |
-| Cloud Deployment | Google Cloud Platform, Artifact Registry, GKE, Kubernetes |
-| CI/CD | GitHub Actions, GitLab CI, CircleCI |
+| Prediction task | Binary classification: `RainTomorrow` (Yes / No) |
+| Model | XGBoost `XGBClassifier` |
+| Input | 24 weather, location, and date features |
+| Application | Flask web interface with server-side validation |
+| Packaging | Docker |
+| Deployment target | Google Kubernetes Engine (GKE) |
+| Delivery automation | GitHub Actions, GitLab CI, and CircleCI configuration |
 
-## Project Structure
+## What this project demonstrates
+
+- Building a repeatable ML pipeline from raw CSV data to a persisted model artefact.
+- Preparing data by extracting date features, imputing numerical missing values, encoding categorical fields, and creating a reproducible train/test split.
+- Training and evaluating an XGBoost classifier with accuracy, precision, recall, and F1-score metrics.
+- Serving the trained model through a responsive Flask interface.
+- Shipping the application in a Docker image and deploying it as a replicated Kubernetes workload behind a load balancer.
+- Defining CI/CD delivery paths for Google Cloud Platform.
+
+## Results
+
+The committed model artefact was trained with a fixed `random_state=42` train/test split. Its recorded evaluation results are:
+
+| Metric | Score |
+| --- | ---: |
+| Training accuracy | 89.85% |
+| Test accuracy | 86.31% |
+| Weighted precision | 85.60% |
+| Weighted recall | 86.31% |
+| Weighted F1-score | 85.62% |
+
+These results provide a baseline demonstration of the delivery workflow; they should be re-evaluated whenever the data, feature engineering, or model configuration changes.
+
+## Solution architecture
+
+```text
+Australia weather data (CSV)
+            |
+            v
+Data processing
+  • date decomposition (year, month, day)
+  • numerical missing-value imputation
+  • categorical label encoding
+  • reproducible train/test split
+            |
+            v
+XGBoost training and evaluation
+            |
+            v
+Model artefact (joblib / model.pkl)
+            |
+            v
+Flask prediction application
+            |
+            v
+Docker image → Artifact Registry → GKE Deployment → LoadBalancer
+```
+
+## Application experience
+
+The Flask application presents the 24 required features in four clear groups: location and date, temperature and rain, wind conditions, and atmospheric conditions. On submission, it validates the numeric feature vector, invokes the loaded model, and returns a clear `YES` or `NO` prediction.
+
+> **Current model contract:** location, wind directions, and `RainToday` must be supplied as the numeric values produced during label encoding. The encoding mappings are written to the training logs. A future enhancement would persist those encoders and expose user-friendly dropdowns.
+
+## Repository structure
 
 ```text
 .
-├── application.py                  # Flask app and prediction route
-├── src/
-│   ├── data_processing.py          # Loading, preprocessing, encoding, splitting
-│   ├── model_training.py           # XGBoost training, evaluation, export
-│   ├── logger.py                   # Logging helper
-│   └── custom_exception.py         # Project exception wrapper
+├── application.py                  # Flask application and prediction route
 ├── pipeline/
-│   └── training_pipeline.py        # End-to-end training entrypoint
-├── templates/
-│   └── index.html                  # Prediction web interface
-├── static/
-│   └── style.css                   # Responsive UI styling
+│   └── training_pipeline.py        # End-to-end processing and training entry point
+├── src/
+│   ├── data_processing.py          # Ingestion, preprocessing, encoding, splitting
+│   ├── model_training.py           # XGBoost training, metrics, model export
+│   ├── logger.py                   # Application logging
+│   └── custom_exception.py         # Project-specific error wrapper
 ├── artifacts/
-│   ├── raw/                        # Raw dataset location
-│   ├── processed/                  # Serialized train/test data
-│   └── models/                     # Trained model artifact
-├── Dockerfile                      # Container image definition
+│   ├── raw/data.csv                # Source weather data
+│   ├── processed/                  # Persisted train/test datasets
+│   └── models/model.pkl            # Trained model used by the app
+├── templates/index.html            # Prediction interface
+├── static/style.css                # Responsive UI styling
+├── Dockerfile                      # Container definition
 ├── kubernetes-deployment.yaml      # GKE deployment and LoadBalancer service
-├── .github/workflows/deploy.yml    # GitHub Actions GCP deployment workflow
-├── .gitlab-ci.yml                  # GitLab CI GCP deployment pipeline
-├── .circleci/config.yml            # CircleCI GCP deployment workflow
+├── .github/workflows/deploy.yml    # GitHub Actions deployment workflow
+├── .gitlab-ci.yml                  # GitLab CI pipeline
+├── .circleci/config.yml            # CircleCI pipeline
 ├── requirements.txt                # Python dependencies
-└── setup.py                        # Editable package installation
+└── setup.py                        # Package metadata
 ```
 
-## Run Locally
+## Run locally
 
-Install dependencies from the project root:
+### Prerequisites
+
+- Python 3.9 or later
+- `pip`
+
+From the repository root, create and activate a virtual environment if desired, then install the project:
 
 ```bash
 pip install -e .
 ```
 
-Train or refresh model artifacts:
+The repository contains processed artefacts and a trained model. To rebuild them from the raw dataset:
 
 ```bash
 python pipeline/training_pipeline.py
 ```
 
-Start the Flask application:
+Start the web application:
 
 ```bash
 python application.py
 ```
 
-Open the app:
-
-```text
-http://localhost:5000
-```
+Then visit [http://localhost:5000](http://localhost:5000).
 
 ## Run with Docker
 
-Build the image:
+Build and run the service locally:
 
 ```bash
 docker build -t australia-rain-mlops-app .
+docker run --rm -p 5000:5000 australia-rain-mlops-app
 ```
 
-Run the container:
+Open [http://localhost:5000](http://localhost:5000) in a browser.
 
-```bash
-docker run -p 5000:5000 australia-rain-mlops-app
+## Deployment on Google Cloud
+
+The included Kubernetes manifest defines:
+
+- A deployment named `mlops-app` with two replicas.
+- A container listening on port `5000`.
+- A `LoadBalancer` service named `mlops-service` exposing port `80`.
+
+The repository also contains GitHub Actions, GitLab CI, and CircleCI definitions for the following delivery sequence:
+
+```text
+Repository push
+    → authenticate to GCP
+    → build Docker image
+    → push to Artifact Registry
+    → retrieve GKE credentials
+    → apply Kubernetes manifest
 ```
 
-## Deploy to GCP Manually
+Before using a workflow, update the GCP project, region, Artifact Registry repository, cluster name, image reference, and CI secrets for your environment. The required service account needs permissions to push images and deploy to the target GKE cluster.
 
-Build and tag the image for Artifact Registry:
+For a manual deployment:
 
 ```bash
 docker build -t us-central1-docker.pkg.dev/<PROJECT_ID>/<REPOSITORY>/mlops-app:latest .
-```
-
-Push the image:
-
-```bash
 docker push us-central1-docker.pkg.dev/<PROJECT_ID>/<REPOSITORY>/mlops-app:latest
-```
 
-Connect to the GKE cluster:
-
-```bash
-gcloud container clusters get-credentials <CLUSTER_NAME> --region <REGION> --project <PROJECT_ID>
-```
-
-Apply the Kubernetes deployment:
-
-```bash
+gcloud container clusters get-credentials <CLUSTER_NAME> \
+  --region <REGION> --project <PROJECT_ID>
 kubectl apply -f kubernetes-deployment.yaml
-```
-
-Check the external service address:
-
-```bash
 kubectl get service mlops-service
 ```
 
-## Portfolio Highlights
+## Technology stack
 
-- Built an end-to-end ML workflow from raw data to deployed prediction service.
-- Structured the project with reusable preprocessing and training modules.
-- Serialized the trained model and served it through a Flask web application.
-- Designed a recruiter-friendly web UI for live model interaction.
-- Packaged the app with Docker for reproducible deployment.
-- Prepared Kubernetes manifests for running the service on GKE.
-- Added CI/CD workflows for automated deployment to Google Cloud Platform.
+| Area | Tools |
+| --- | --- |
+| Language and backend | Python, Flask |
+| Data and ML | pandas, NumPy, scikit-learn, XGBoost |
+| Model persistence | joblib |
+| Front end | HTML, CSS, Jinja templates |
+| Packaging | Docker, setuptools |
+| Cloud and orchestration | Google Cloud Platform, Artifact Registry, GKE, Kubernetes |
+| CI/CD | GitHub Actions, GitLab CI, CircleCI |
 
-## Future Improvements
+## Next improvements
 
-- Persist fitted label encoders so the UI can accept natural category names.
-- Replace encoded categorical inputs with dropdowns.
-- Add a REST API endpoint for programmatic predictions.
-- Add automated tests for preprocessing, training, and Flask routes.
-- Add experiment tracking and model versioning.
-- Add model monitoring for data drift and prediction quality.
+- Persist fitted encoders and present categorical inputs as readable dropdowns.
+- Add a JSON REST API for programmatic predictions.
+- Add unit and integration tests for preprocessing, training, and the Flask route.
+- Introduce experiment tracking, model versioning, and a model registry.
+- Add monitoring for service health, input drift, and prediction quality.
+- Parameterise infrastructure and pipeline configuration for safer multi-environment deployments.
 
 ## Author
 
-Mohamed EL Aouan
+**Mohamed EL Aouan**
